@@ -1,1 +1,388 @@
 
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanhaiya Vegetable</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f5faf5;color:#19351e}
+header{background:#176b38;color:white;padding:20px;text-align:center}
+header h1{margin:0;font-size:27px}
+header p{margin:7px 0 0}
+nav{background:white;padding:13px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+nav a{color:#176b38;text-decoration:none;font-weight:bold}
+.hero{padding:35px 15px;text-align:center;background:#e2f5e5}
+.hero h2{font-size:27px;margin:0 0 10px}
+button{background:#198b46;color:white;border:0;padding:11px 16px;border-radius:8px;cursor:pointer;font-weight:bold}
+button:disabled{opacity:.5}
+input,select,textarea{width:100%;padding:12px;margin:7px 0;border:1px solid #cbdacb;border-radius:8px;font-size:15px}
+section{padding:20px;max-width:1100px;margin:auto}
+.products{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:13px}
+.card{background:white;padding:12px;border-radius:13px;box-shadow:0 2px 9px #0001}
+.card img{width:100%;height:120px;object-fit:cover;border-radius:9px;background:#eee}
+.card h3{margin:9px 0 5px}
+.price{color:#16843c;font-weight:bold}
+.stock{font-size:13px;color:#647568;margin:7px 0}
+.panel{background:white;padding:18px;border-radius:13px;margin:15px 0;box-shadow:0 2px 9px #0001}
+.hidden{display:none!important}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+.small{font-size:13px;color:#607064}
+footer{text-align:center;background:#176b38;color:white;padding:22px;margin-top:30px}
+#message{padding:10px;color:#176b38}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🥬 KANHAIYA VEGETABLE</h1>
+<p>Fresh Vegetables • Best Price • Home Delivery</p>
+</header>
+
+<nav>
+<a href="#home">Home</a>
+<a href="#vegetables">Vegetables</a>
+<a href="#cart">My Cart 🛒</a>
+<a href="#contact">Contact</a>
+<a href="#owner">Owner</a>
+</nav>
+
+<div class="hero" id="home">
+<h2>ताजी सब्जियाँ, सही दाम! 🥦</h2>
+<p>घर बैठे सब्जियाँ ऑर्डर करें।</p>
+<button onclick="document.getElementById('vegetables').scrollIntoView()">सब्जियाँ देखें</button>
+</div>
+
+<section id="vegetables">
+<h2>🥕 हमारी सब्जियाँ</h2>
+<input id="search" placeholder="सब्जी का नाम खोजें..." oninput="renderProducts()">
+<div class="products" id="products"></div>
+</section>
+
+<section id="cart">
+<h2>🛒 आपका Cart</h2>
+<div class="panel">
+<div id="cartItems">आपका Cart खाली है।</div>
+<h3 id="total">कुल: ₹0</h3>
+</div>
+
+<div class="panel">
+<h3>ऑर्डर की जानकारी</h3>
+<input id="customer" placeholder="आपका पूरा नाम">
+<input id="phone" type="tel" placeholder="मोबाइल नंबर">
+<select id="delivery">
+<option value="delivery">Home Delivery</option>
+<option value="pickup">Shop Pickup</option>
+</select>
+<textarea id="address" placeholder="पूरा घर का पता"></textarea>
+<input id="maplink" placeholder="Google Maps Location Link (वैकल्पिक)">
+<select id="payment">
+<option value="cash">Cash Payment</option>
+<option value="upi">UPI Payment</option>
+</select>
+<button onclick="placeOrder()">ऑर्डर भेजें</button>
+<p class="small">UPI विकल्प का अर्थ अभी भुगतान का तरीका चुनना है। वास्तविक ऑनलाइन भुगतान बाद में जोड़ा जाएगा।</p>
+</div>
+</section>
+
+<section id="contact">
+<div class="panel">
+<h2>📍 हमारी दुकान</h2>
+<p>NK Factory, Firoz Gandhi Gali No. 1, Sector 9, Gurugram, Haryana</p>
+<p>📞 9910639123</p>
+<a href="https://www.google.com/maps/search/?api=1&query=NK+Factory+Firoz+Gandhi+Gali+No+1+Sector+9+Gurugram" target="_blank">दुकान का Google Maps Location देखें</a>
+<br><br>
+<a href="https://wa.me/919910639123" target="_blank">
+<button>WhatsApp पर संपर्क करें</button>
+</a>
+</div>
+</section>
+
+<section id="owner">
+<h2>🔐 Owner Admin</h2>
+<div class="panel" id="loginBox">
+<h3>Owner Login</h3>
+<input id="email" type="email" placeholder="Owner Gmail">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="loginMsg"></p>
+</div>
+
+<div id="adminBox" class="hidden">
+<div class="panel">
+<h3>Welcome Kanhaiya Prasad 👑</h3>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="panel">
+<h3>सब्जी जोड़ें / Edit करें</h3>
+<input id="editId" type="hidden">
+<input id="pname" placeholder="सब्जी का नाम">
+<input id="pprice" type="number" min="0" step="0.01" placeholder="रेट (₹ प्रति KG)">
+<input id="pstock" type="number" min="0" step="0.01" placeholder="स्टॉक (KG)">
+<input id="pimage" placeholder="सब्जी की Photo URL">
+<button onclick="saveProduct()">Save Product</button>
+<button onclick="clearForm()">Clear</button>
+</div>
+
+<div class="panel">
+<h3>सभी सब्जियाँ Manage करें</h3>
+<div id="manageProducts"></div>
+</div>
+
+<div class="panel">
+<h3>📦 Customer Orders</h3>
+<button onclick="loadOrders()">Refresh Orders</button>
+<div id="orders"></div>
+</div>
+</div>
+</section>
+
+<footer>
+<h3>KANHAIYA VEGETABLE</h3>
+<p>Fresh Vegetables • Gurugram Sector 9</p>
+<p>Call: 9910639123</p>
+</footer>
+
+<script>
+// अपना Supabase Project URL और Publishable/anon key डालें
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY";
+
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let products=[];
+let cart=[];
+
+function money(n){return "₹"+Number(n).toFixed(2)}
+
+async function loadProducts(){
+ const {data,error}=await db.from("products")
+ .select("*").eq("is_available",true).order("name");
+ if(error){console.error(error);return}
+ products=data||[];
+ renderProducts();
+ renderManage();
+}
+
+function renderProducts(){
+ const q=document.getElementById("search").value.toLowerCase();
+ const list=products.filter(p=>p.name.toLowerCase().includes(q));
+ document.getElementById("products").innerHTML=list.map(p=>`
+ <div class="card">
+ <img src="${safe(p.image_url||"https://placehold.co/300x200?text=Vegetable")}" alt="${safe(p.name)}">
+ <h3>${safe(p.name)}</h3>
+ <div class="price">${money(p.price)} / ${safe(p.unit)}</div>
+ <div class="stock">${p.stock>0?"Available: "+p.stock+" "+safe(p.unit):"Out of Stock"}</div>
+ <button ${p.stock<=0?"disabled":""} onclick="addCart(${p.id})">Add to Cart</button>
+ </div>`).join("")||"कोई सब्जी नहीं मिली।";
+}
+
+function safe(s){
+ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function addCart(id){
+ const p=products.find(x=>x.id===id);
+ if(!p)return;
+ const item=cart.find(x=>x.id===id);
+ if(item){
+ if(item.qty+1>p.stock)return alert("इतना स्टॉक उपलब्ध नहीं है");
+ item.qty++;
+ }else cart.push({id,qty:1});
+ renderCart();
+}
+
+function changeQty(id,delta){
+ const item=cart.find(x=>x.id===id);
+ const p=products.find(x=>x.id===id);
+ if(!item||!p)return;
+ item.qty+=delta;
+ if(item.qty<=0)cart=cart.filter(x=>x.id!==id);
+ if(item&&item.qty>p.stock){item.qty=p.stock;alert("उपलब्ध स्टॉक से ज्यादा नहीं चुन सकते");}
+ renderCart();
+}
+
+function renderCart(){
+ const el=document.getElementById("cartItems");
+ if(!cart.length){el.innerHTML="आपका Cart खाली है।";document.getElementById("total").innerText="कुल: ₹0";return}
+ let total=0;
+ el.innerHTML=cart.map(i=>{
+ const p=products.find(x=>x.id===i.id);
+ if(!p)return "";
+ total+=p.price*i.qty;
+ return `<div class="row">
+ <span>${safe(p.name)} – ${money(p.price)} × ${i.qty}</span>
+ <button onclick="changeQty(${i.id},-1)">−</button>
+ <button onclick="changeQty(${i.id},1)">+</button>
+ </div>`;
+ }).join("");
+ document.getElementById("total").innerText="कुल: "+money(total);
+}
+
+async function placeOrder(){
+ if(!cart.length)return alert("पहले सब्जियाँ Cart में जोड़ें");
+ const name=document.getElementById("customer").value.trim();
+ const phone=document.getElementById("phone").value.trim();
+ const delivery=document.getElementById("delivery").value;
+ const address=document.getElementById("address").value.trim();
+ const map=document.getElementById("maplink").value.trim();
+ const payment=document.getElementById("payment").value;
+ if(name.length<2||!/^[0-9+\-\s]{10,15}$/.test(phone))return alert("नाम और सही मोबाइल नंबर भरें");
+ if(delivery==="delivery"&&!address)return alert("Delivery Address भरें");
+ if(map&&!/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.app\.goo\.gl\/)/i.test(map))return alert("सही Google Maps Link डालें");
+
+ const items=cart.map(i=>({product_id:i.id,quantity:i.qty}));
+ const btn=document.querySelector("#cart button[onclick='placeOrder()']");
+ btn.disabled=true;
+ try{
+ const {data,error}=await db.rpc("place_order",{
+ p_customer_name:name,p_phone:phone,
+ p_address:delivery==="delivery"?address:null,
+ p_map_link:map||null,p_delivery_method:delivery,
+ p_payment_method:payment,p_items:items
+ });
+ if(error)throw error;
+ alert("आपका ऑर्डर सफलतापूर्वक भेज दिया गया! Order ID: "+data);
+ cart=[];
+ renderCart();
+ await loadProducts();
+ }catch(e){alert("ऑर्डर नहीं हुआ: "+e.message)}
+ finally{btn.disabled=false}
+}
+
+async function login(){
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
+ const msg=document.getElementById("loginMsg");
+ const {error}=await db.auth.signInWithPassword({email,password});
+ if(error){msg.innerText=error.message;return}
+ await checkAdmin();
+}
+
+async function checkAdmin(){
+ const {data:{user}}=await db.auth.getUser();
+ if(!user)return;
+ const {data,error}=await db.from("admins").select("user_id").eq("user_id",user.id).maybeSingle();
+ if(error||!data){
+ await db.auth.signOut();
+ document.getElementById("loginMsg").innerText="यह Owner Account नहीं है।";
+ return;
+ }
+ document.getElementById("loginBox").classList.add("hidden");
+ document.getElementById("adminBox").classList.remove("hidden");
+ await loadProducts();
+ await loadOrders();
+}
+
+async function logout(){
+ await db.auth.signOut();
+ document.getElementById("adminBox").classList.add("hidden");
+ document.getElementById("loginBox").classList.remove("hidden");
+}
+
+async function saveProduct(){
+ const id=document.getElementById("editId").value;
+ const name=document.getElementById("pname").value.trim();
+ const price=Number(document.getElementById("pprice").value);
+ const stock=Number(document.getElementById("pstock").value);
+ const image=document.getElementById("pimage").value.trim();
+ if(!name||!Number.isFinite(price)||price<0||!Number.isFinite(stock)||stock<0)return alert("सही नाम, रेट और स्टॉक भरें");
+ const payload={name,price,stock,image_url:image||null,unit:"kg",is_available:true};
+ const result=id
+ ?await db.from("products").update(payload).eq("id",id)
+ :await db.from("products").insert(payload);
+ if(result.error)return alert(result.error.message);
+ alert("सब्जी सेव हो गई!");
+ clearForm();
+ await loadProducts();
+}
+
+function clearForm(){
+ ["editId","pname","pprice","pstock","pimage"].forEach(id=>document.getElementById(id).value="");
+}
+
+function renderManage(){
+ const el=document.getElementById("manageProducts");
+ if(!el)return;
+ el.innerHTML=products.map(p=>`
+ <div class="panel">
+ <b>${safe(p.name)}</b> – ${money(p.price)} – Stock: ${p.stock} ${safe(p.unit)}
+ <div class="row">
+ <button onclick="editProduct(${p.id})">Edit</button>
+ <button onclick="deleteProduct(${p.id})">Delete</button>
+ </div></div>`).join("");
+}
+
+function editProduct(id){
+ const p=products.find(x=>x.id===id);
+ if(!p)return;
+ document.getElementById("editId").value=p.id;
+ document.getElementById("pname").value=p.name;
+ document.getElementById("pprice").value=p.price;
+ document.getElementById("pstock").value=p.stock;
+ document.getElementById("pimage").value=p.image_url||"";
+ document.getElementById("owner").scrollIntoView();
+}
+
+async function deleteProduct(id){
+ if(!confirm("क्या यह सब्जी हटानी है?"))return;
+ const {error}=await db.from("products").update({is_available:false}).eq("id",id);
+ if(error)return alert(error.message);
+ await loadProducts();
+}
+
+async function loadOrders(){
+ const el=document.getElementById("orders");
+ if(!el)return;
+ const {data,error}=await db.from("orders").select("*").order("created_at",{ascending:false});
+ if(error){el.innerText=error.message;return}
+ if(!data.length){el.innerText="अभी कोई ऑर्डर नहीं है।";return}
+ el.innerHTML=data.map(o=>`
+ <div class="panel">
+ <b>Order #${o.id} – ${money(o.total)}</b>
+ <p>${safe(o.customer_name)} | ${safe(o.phone)}</p>
+ <p>${safe(o.address||"Shop Pickup")}</p>
+ <p>${safe(o.delivery_method)} | ${safe(o.payment_method)} | ${safe(o.status)}</p>
+ ${o.map_link?`<a href="${safe(o.map_link)}" target="_blank">View on Google Maps</a>`:""}
+ <p><button onclick="orderItems(${o.id})">View Items</button></p>
+ <select id="status${o.id}">
+ <option value="pending">Pending</option>
+ <option value="accepted">Accepted</option>
+ <option value="rejected">Rejected</option>
+ <option value="completed">Completed</option>
+ </select>
+ <button onclick="updateStatus(${o.id})">Update Status</button>
+ </div>`).join("");
+}
+
+async function orderItems(id){
+ const {data,error}=await db.from("order_items").select("*").eq("order_id",id);
+ if(error)return alert(error.message);
+ alert(data.map(x=>x.product_name+" × "+x.quantity+" = "+money(x.price*x.quantity)).join("\n"));
+}
+
+async function updateStatus(id){
+ const status=document.getElementById("status"+id).value;
+ const {error}=await db.from("orders").update({status}).eq("id",id);
+ if(error)return alert(error.message);
+ alert("Order Status Updated");
+ await loadOrders();
+}
+
+async function start(){
+ if(SUPABASE_URL.startsWith("YOUR_")||SUPABASE_KEY.startsWith("YOUR_")){
+ document.getElementById("message").innerText="पहले Supabase URL और Publishable Key सेट करें।";
+ }
+ await loadProducts();
+ await checkAdmin();
+}
+start();
+</script>
+<div id="message"></div>
+</body>
+  </html>
+
